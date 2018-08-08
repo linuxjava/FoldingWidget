@@ -1,1 +1,1 @@
-# FoldingWidget = remote = local
+# FoldingWidget
