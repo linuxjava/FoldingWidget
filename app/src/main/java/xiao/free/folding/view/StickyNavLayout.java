@@ -21,10 +21,10 @@ import xiao.free.folding.R;
 public class StickyNavLayout extends LinearLayout implements NestedScrollingParent {
     private static final String TAG = "StickyNavLayout";
     private static final int TOP_CHILD_FLING_THRESHOLD = 3;
-    private static final int DEFAULT_TOP_PADDING = 0;
+    private static final int DEFAULT_TOP_PADDING = 40;
     private static final int TYPE_ALL = 1;
     private static final int TYPE_CONTAINER = 2;
-    private int mType = TYPE_CONTAINER;
+    private int mType = TYPE_ALL;
     private boolean isFling = false;//是否快速滑动
     private int mTopPadding = 0;//滑动到顶部的padding
     private View mHeaderView;//头部View
@@ -145,11 +145,34 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         Log.e(TAG, hiddenTop + "::" + showTop);
         if (hiddenTop || showTop) {
             if (mType == TYPE_ALL) {
-                scrollBy(0, dy);
+                /**
+                 * bug1：向上超快速滑动
+                 * 检测targetY不能超过mMaxScrollDistance
+                 * bug2：按住向上滑动，然后突然快速下滑
+                 * 检测targetY不能小于0
+                 */
+                float targetY = getScrollY() + dy;
+                if(targetY > mMaxScrollDistance){
+                    targetY = mMaxScrollDistance;
+                }
+                if(targetY < 0){
+                    targetY = 0;
+                }
+                scrollTo(0, (int) targetY);
             } else {
-                mContainer.setTranslationY(mContainer.getTranslationY() - dy);
+                /**
+                 * 处理同上场景的bug
+                 */
+                float targetY = mContainer.getTranslationY() - dy;
+                if(-targetY > mMaxScrollDistance) {
+                    targetY = -mMaxScrollDistance;
+                }
+                if(targetY > 0){
+                    targetY = 0;
+                }
+                mContainer.setTranslationY(targetY);
                 //修改透明度
-                mHeaderView.setAlpha(getScrollRatio());
+                setAlpha();
             }
             callListener();
             consumed[1] = dy;
@@ -271,13 +294,20 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
      * @return
      */
     private int computeDuration(float velocityY) {
-        final int distance;
-        if (velocityY > 0) {
-            distance = Math.abs(mHeaderView.getHeight() - getScrollY());
-        } else {
-            distance = Math.abs(mHeaderView.getHeight() - (mHeaderView.getHeight() - getScrollY()));
+        int distance = 0;
+        if(mType == TYPE_ALL) {
+            if (velocityY > 0) {//向上滑
+                distance = Math.abs(mMaxScrollDistance - getScrollY());
+            } else {//向下滑
+                distance = Math.abs(getScrollY());
+            }
+        }else if(mType == TYPE_CONTAINER){
+            if (velocityY > 0) {
+                distance = (int) Math.abs(mMaxScrollDistance + mContainer.getTranslationY());
+            } else {
+                distance = (int) Math.abs(mContainer.getTranslationY());
+            }
         }
-
 
         final int duration;
         velocityY = Math.abs(velocityY);
@@ -340,7 +370,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
                         float y = (Float) animation.getAnimatedValue();
                         if (y != mContainer.getTranslationY()) {
                             mContainer.setTranslationY(y);
-                            mHeaderView.setAlpha(getScrollRatio());//修改透明度
+                            setAlpha();//修改透明度
                             callListener();
                         }
                     }
@@ -413,7 +443,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
                         float y = (Float) animation.getAnimatedValue();
                         if (y != mContainer.getTranslationY()) {
                             mContainer.setTranslationY(y);
-                            mHeaderView.setAlpha(getScrollRatio());//修改透明度
+                            setAlpha();//修改透明度
                             callListener();
                         }
                     }
@@ -437,6 +467,14 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
             }
 
         }
+    }
+
+    private void setAlpha(){
+        float ratio = getScrollRatio();
+        if(ratio < 0.5f){
+            ratio = 0.5f;
+        }
+        //mHeaderView.setAlpha(ratio);//修改透明度
     }
 
     private void callListener() {
@@ -464,6 +502,10 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     }
 
     public interface ScrollListener {
-        void onScroll(float ratio);
+        /**
+         * 头部滚动回调
+         * @param percentage 1:头部完全隐藏；0头部完全显示
+         */
+        void onScroll(float percentage);
     }
 }
