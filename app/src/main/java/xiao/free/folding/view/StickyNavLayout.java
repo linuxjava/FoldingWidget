@@ -35,6 +35,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     private ValueAnimator mOffsetAnimator;
     private Interpolator mInterpolator;
     private ScrollListener mListener;
+    private boolean enablePullDown = false;//头部折叠后，是否支持下拉展开
 
     public StickyNavLayout(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -45,6 +46,10 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
 
     public void setListener(ScrollListener mListener) {
         this.mListener = mListener;
+    }
+
+    public void setEnablePullDown(boolean enablePullDown) {
+        this.enablePullDown = enablePullDown;
     }
 
     @Override
@@ -87,9 +92,6 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
 
         setMeasuredDimension(getMeasuredWidth(), mHeaderView.getMeasuredHeight() +
                 mContainer.getMeasuredHeight());
-
-//        setMeasuredDimension(getMeasuredWidth(), mRecycView.getMeasuredHeight() +
-//                navHeight + mViewPager.getMeasuredHeight());
     }
 
     @Override
@@ -156,6 +158,12 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
 
         Log.e(TAG, hiddenTop + "::" + showTop);
         if (hiddenTop || showTop) {
+
+            //头部折叠后不支持下拉头部展开
+            if(showTop && !enablePullDown){
+                return;
+            }
+
             if (mType == SLIDING_ALL) {
                 /**
                  * bug1：向上超快速滑动
