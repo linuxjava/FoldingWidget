@@ -4,7 +4,6 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.support.v4.view.NestedScrollingParent;
 import android.support.v4.view.ViewCompat;
-import android.support.v4.view.ViewPager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -22,15 +21,16 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     private static final String TAG = "StickyNavLayout";
     private static final int TOP_CHILD_FLING_THRESHOLD = 3;
     private static final int DEFAULT_TOP_PADDING = 40;
-    private static final int TYPE_ALL = 1;
-    private static final int TYPE_CONTAINER = 2;
-    private int mType = TYPE_ALL;
+    private static final int SLIDING_ALL = 1;//整个布局整体上滑
+    private static final int SLIDING_CONTAINER = 2;//只有底部container容器向上滑动，头部不动
+    private int mType = SLIDING_ALL;
     private boolean isFling = false;//是否快速滑动
     private int mTopPadding = 0;//滑动到顶部的padding
     private View mHeaderView;//头部View
     private View mContainer;//底部内容容器
     private View mNav;//固定导航栏
     private ViewGroup mViewPager;
+    private RecyclerView mRecycView;
     private int mMaxScrollDistance;//最大滚动距离headerViewHeight-mTopPadding
     private ValueAnimator mOffsetAnimator;
     private Interpolator mInterpolator;
@@ -53,12 +53,8 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         mHeaderView = findViewById(R.id.id_stickynavlayout_topview);
         mContainer = findViewById(R.id.container);
         mNav = findViewById(R.id.id_stickynavlayout_indicator);
-        View view = findViewById(R.id.id_stickynavlayout_viewpager);
-        if (!(view instanceof ViewPager)) {
-            throw new RuntimeException(
-                    "id_stickynavlayout_viewpager show used by ViewPager !");
-        }
-        mViewPager = (ViewPager) view;
+        mViewPager = findViewById(R.id.id_stickynavlayout_viewpager);
+        mRecycView = findViewById(R.id.id_stickynavlayout_recycview);
 
         mTopPadding = dp2px(getContext(), DEFAULT_TOP_PADDING);
     }
@@ -70,14 +66,30 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
 
         getChildAt(0).measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
 
+        //设置Container布局高度
         ViewGroup.LayoutParams params = mContainer.getLayoutParams();
         params.height = getMeasuredHeight() - mTopPadding;
 
-        params = mViewPager.getLayoutParams();
-        params.height = getMeasuredHeight() - mNav.getMeasuredHeight() - mTopPadding;
+        //固定导航头高度
+        int navHeight = 0;
+        if(mNav != null){
+            navHeight = mNav.getMeasuredHeight();
+        }
+
+        if(mViewPager != null) {
+            params = mViewPager.getLayoutParams();
+            params.height = getMeasuredHeight() - navHeight - mTopPadding;
+        }else if(mRecycView != null){
+            params = mRecycView.getLayoutParams();
+            params.height = getMeasuredHeight() - navHeight - mTopPadding;
+
+        }
 
         setMeasuredDimension(getMeasuredWidth(), mHeaderView.getMeasuredHeight() +
-                mNav.getMeasuredHeight() + mViewPager.getMeasuredHeight());
+                mContainer.getMeasuredHeight());
+
+//        setMeasuredDimension(getMeasuredWidth(), mRecycView.getMeasuredHeight() +
+//                navHeight + mViewPager.getMeasuredHeight());
     }
 
     @Override
@@ -122,7 +134,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
                 return;
             }
 
-            if (mType == TYPE_ALL) {
+            if (mType == SLIDING_ALL) {
                 autoScroll();
             } else {
                 autoScroll2();
@@ -144,7 +156,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
 
         Log.e(TAG, hiddenTop + "::" + showTop);
         if (hiddenTop || showTop) {
-            if (mType == TYPE_ALL) {
+            if (mType == SLIDING_ALL) {
                 /**
                  * bug1：向上超快速滑动
                  * 检测targetY不能超过mMaxScrollDistance
@@ -185,7 +197,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
      * @return
      */
     private boolean isHiddenHeader(int dy) {
-        if (mType == TYPE_ALL) {
+        if (mType == SLIDING_ALL) {
             return dy > 0 && getScrollY() < mMaxScrollDistance;
         } else {
             return dy > 0 && -mContainer.getTranslationY() < mMaxScrollDistance;
@@ -198,7 +210,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
      * @return
      */
     private boolean isShowHeader(View target, int dy) {
-        if (mType == TYPE_ALL) {
+        if (mType == SLIDING_ALL) {
             return dy < 0 && getScrollY() > 0 && !ViewCompat.canScrollVertically(target, -1);
         } else {
             /**
@@ -216,7 +228,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
      * @return
      */
     private boolean isFulledHideHeader() {
-        if (mType == TYPE_ALL) {
+        if (mType == SLIDING_ALL) {
             return getScrollY() >= mMaxScrollDistance;
         } else {
             return mContainer.getTranslationY() <= -mMaxScrollDistance;
@@ -229,7 +241,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
      * @return
      */
     private boolean isFulledShowHeader() {
-        if (mType == TYPE_ALL) {
+        if (mType == SLIDING_ALL) {
             return getScrollY() <= 0;
         } else {
             return mContainer.getTranslationY() >= 0;
@@ -258,7 +270,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
             consumed = childAdapterPosition > TOP_CHILD_FLING_THRESHOLD;
         }
 
-        if (mType == TYPE_ALL) {
+        if (mType == SLIDING_ALL) {
             if (!consumed) {
                 flingScroll(velocityY, computeDuration(0), consumed);
             } else {
@@ -295,13 +307,13 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
      */
     private int computeDuration(float velocityY) {
         int distance = 0;
-        if(mType == TYPE_ALL) {
+        if(mType == SLIDING_ALL) {
             if (velocityY > 0) {//向上滑
                 distance = Math.abs(mMaxScrollDistance - getScrollY());
             } else {//向下滑
                 distance = Math.abs(getScrollY());
             }
-        }else if(mType == TYPE_CONTAINER){
+        }else if(mType == SLIDING_CONTAINER){
             if (velocityY > 0) {
                 distance = (int) Math.abs(mMaxScrollDistance + mContainer.getTranslationY());
             } else {
@@ -489,7 +501,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
      * @return
      */
     private float getScrollRatio() {
-        if (mType == TYPE_ALL) {
+        if (mType == SLIDING_ALL) {
             return 1.0f - getScrollY() * 1.0f / mMaxScrollDistance;
         } else {
             return 1.0f - Math.abs(mContainer.getTranslationY()) / mMaxScrollDistance;
