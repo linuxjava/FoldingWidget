@@ -44,6 +44,11 @@ public class RecycViewActivity extends FragmentActivity {
         mStickyNavLayout.setEnablePullDown(false);
         mStickyNavLayout.setListener(new StickyNavLayout.ScrollListener() {
             @Override
+            public void onStartScroll() {
+                Log.d("xiao1", "onStartScroll");
+            }
+
+            @Override
             public void onScroll(float percentage) {
                 Log.d("xiao1", "percentage=" + percentage);
             }

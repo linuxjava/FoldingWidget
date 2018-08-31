@@ -33,6 +33,11 @@ public class ViewPageActivity extends FragmentActivity {
     private void initEvents() {
         mStickyNavLayout.setListener(new StickyNavLayout.ScrollListener() {
             @Override
+            public void onStartScroll() {
+
+            }
+
+            @Override
             public void onScroll(float percentage) {
                 Log.d("xiao1", "percentage=" + percentage);
             }
