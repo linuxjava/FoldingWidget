@@ -68,7 +68,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         if (mType == SLIDING_ALL) {
             if (isFulledHideHeader()) {
                 if(mListener != null){
-                    mListener.onStartScroll();
+                    mListener.onStartScroll(-1);
                 }
 
                 final int currentOffset = getScrollY();
@@ -99,7 +99,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         } else {
             if (isFulledHideHeader()) {
                 if(mListener != null && enablePullDown){
-                    mListener.onStartScroll();
+                    mListener.onStartScroll(-1);
                 }
 
                 final float currentOffset = mContainer.getTranslationY();
@@ -195,7 +195,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     public boolean onStartNestedScroll(View child, View target, int nestedScrollAxes) {
         Log.e(TAG, "onStartNestedScroll");
         if(mListener != null && !isFulledHideHeader()){
-            mListener.onStartScroll();
+            mListener.onStartScroll(1);
         }
         return true;
     }
@@ -605,8 +605,9 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     public interface ScrollListener {
         /**
          * 开始滚动
+         * @param direction 1:向上滚动；-1向上滚动
          */
-        void onStartScroll();
+        void onStartScroll(int direction);
         /**
          * 头部滚动回调
          * @param percentage 1:头部完全隐藏；0头部完全显示

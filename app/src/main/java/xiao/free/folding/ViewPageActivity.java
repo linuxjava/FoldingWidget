@@ -32,8 +32,10 @@ public class ViewPageActivity extends FragmentActivity {
 
     private void initEvents() {
         mStickyNavLayout.setListener(new StickyNavLayout.ScrollListener() {
+
+
             @Override
-            public void onStartScroll() {
+            public void onStartScroll(int direction) {
 
             }
 
