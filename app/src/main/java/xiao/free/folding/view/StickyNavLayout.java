@@ -35,7 +35,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     private ValueAnimator mOffsetAnimator;
     private Interpolator mInterpolator;
     private ScrollListener mListener;
-    private boolean enablePullDown = false;//头部折叠后，是否支持下拉展开
+    private boolean enablePullDown = true;//头部折叠后，是否支持下拉展开
 
     public StickyNavLayout(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -48,8 +48,78 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         this.mListener = mListener;
     }
 
+    /**
+     * 控制头部折叠后是否还能展开
+     * @param enablePullDown
+     */
     public void setEnablePullDown(boolean enablePullDown) {
         this.enablePullDown = enablePullDown;
+    }
+
+    /**
+     * 展开头部
+     * @param duration
+     */
+    public void expand(int duration){
+        if(mHeaderView == null){
+            return;
+        }
+
+        if (mType == SLIDING_ALL) {
+            if (isFulledHideHeader()) {
+                final int currentOffset = getScrollY();
+                //显示头部
+                if (mOffsetAnimator == null) {
+                    mOffsetAnimator = new ValueAnimator();
+                    mOffsetAnimator.setInterpolator(mInterpolator);
+                    mOffsetAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                        @Override
+                        public void onAnimationUpdate(ValueAnimator animation) {
+                            if (animation.getAnimatedValue() instanceof Integer) {
+                                int y = (Integer) animation.getAnimatedValue();
+                                if (y != getScrollY()) {
+                                    scrollTo(0, y);
+                                    callListener();
+                                }
+
+                            }
+                        }
+                    });
+                } else {
+                    mOffsetAnimator.cancel();
+                }
+                mOffsetAnimator.setDuration(duration);
+                mOffsetAnimator.setIntValues(currentOffset, 0);
+                mOffsetAnimator.start();
+            }
+        } else {
+            if (isFulledHideHeader()) {
+                final float currentOffset = mContainer.getTranslationY();
+                //显示头部
+                if (mOffsetAnimator == null) {
+                    mOffsetAnimator = new ValueAnimator();
+                    mOffsetAnimator.setInterpolator(mInterpolator);
+                    mOffsetAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                        @Override
+                        public void onAnimationUpdate(ValueAnimator animation) {
+                            if (animation.getAnimatedValue() instanceof Float) {
+                                float y = (Float) animation.getAnimatedValue();
+                                if (y != mContainer.getTranslationY()) {
+                                    mContainer.setTranslationY(y);
+                                    setAlpha();//修改透明度
+                                    callListener();
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    mOffsetAnimator.cancel();
+                }
+                mOffsetAnimator.setDuration(duration);
+                mOffsetAnimator.setFloatValues(currentOffset, 0);
+                mOffsetAnimator.start();
+            }
+        }
     }
 
     @Override
@@ -137,9 +207,9 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
             }
 
             if (mType == SLIDING_ALL) {
-                autoScroll();
+                autoScroll(300);
             } else {
-                autoScroll2();
+                autoScroll2(300);
             }
         } else {
             isFling = false;
@@ -159,7 +229,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         Log.e(TAG, hiddenTop + "::" + showTop);
         if (hiddenTop || showTop) {
 
-            //头部折叠后不支持下拉头部展开
+            //头部折叠后不支持下拉展开头部
             if(showTop && !enablePullDown){
                 return;
             }
@@ -342,7 +412,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
 
     }
 
-    private void autoScroll() {
+    private void autoScroll(int duration) {
         final int currentOffset = getScrollY();
         final int headerHeight = mHeaderView.getHeight();
         if (mOffsetAnimator == null) {
@@ -364,7 +434,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         } else {
             mOffsetAnimator.cancel();
         }
-        mOffsetAnimator.setDuration(300);
+        mOffsetAnimator.setDuration(duration);
 
         if (currentOffset < headerHeight / 2) {
             //显示头部
@@ -377,7 +447,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         }
     }
 
-    private void autoScroll2() {
+    private void autoScroll2(int duration) {
         final float currentOffset = mContainer.getTranslationY();
         final int headerHeight = mHeaderView.getHeight();
         if (mOffsetAnimator == null) {
@@ -399,7 +469,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         } else {
             mOffsetAnimator.cancel();
         }
-        mOffsetAnimator.setDuration(300);
+        mOffsetAnimator.setDuration(duration);
 
         if (Math.abs(currentOffset) < headerHeight / 2) {
             //显示头部

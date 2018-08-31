@@ -35,7 +35,8 @@
             android:id="@id/id_stickynavlayout_indicator"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:background="@android:color/darker_gray">
+            android:background="@android:color/darker_gray"
+            android:onClick="OnExpand">
 
             <TextView
                 android:layout_width="wrap_content"
