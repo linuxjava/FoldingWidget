@@ -1,6 +1,7 @@
 package xiao.free.folding.view;
 
 import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.content.Context;
 import android.support.v4.view.NestedScrollingParent;
 import android.support.v4.view.ViewCompat;
@@ -15,12 +16,13 @@ import android.view.animation.Interpolator;
 import android.widget.LinearLayout;
 
 import xiao.free.folding.R;
+import xiao.free.folding.util.AppUtils;
 
 
 public class StickyNavLayout extends LinearLayout implements NestedScrollingParent {
-    private static final String TAG = "StickyNavLayout";
+    public static final String TAG = "StickyNavLayout";
     private static final int TOP_CHILD_FLING_THRESHOLD = 3;
-    private static final int DEFAULT_TOP_PADDING = 40;
+    private static final int DEFAULT_TOP_PADDING = 0;
     private static final int SLIDING_ALL = 1;//整个布局整体上滑
     private static final int SLIDING_CONTAINER = 2;//只有底部container容器向上滑动，头部不动
     private int mType = SLIDING_ALL;
@@ -42,6 +44,10 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         setOrientation(LinearLayout.VERTICAL);
 
         mInterpolator = new AccelerateInterpolator();
+
+        Log.d(TAG, "StatusBarHeight=" + AppUtils.getStatusBarHeight(getContext()));
+        Log.d(TAG, "VirtualNavBarHeight=" + StickyNavLayoutHelper.getVirtualNavBarHeight(getContext()));
+        Log.d(TAG, StickyNavLayoutHelper.getRealHeight(getContext()) + "::" + StickyNavLayoutHelper.getHeight(getContext()));
     }
 
     public void setListener(ScrollListener mListener) {
@@ -50,6 +56,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
 
     /**
      * 控制头部折叠后是否还能展开
+     *
      * @param enablePullDown
      */
     public void setEnablePullDown(boolean enablePullDown) {
@@ -58,16 +65,17 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
 
     /**
      * 展开头部
+     *
      * @param duration
      */
-    public void expand(int duration){
-        if(mHeaderView == null){
+    public void expand(int duration) {
+        if (mHeaderView == null) {
             return;
         }
 
         if (mType == SLIDING_ALL) {
             if (isFulledHideHeader()) {
-                if(mListener != null){
+                if (mListener != null) {
                     mListener.onStartScroll(-1);
                 }
 
@@ -98,7 +106,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
             }
         } else {
             if (isFulledHideHeader()) {
-                if(mListener != null && enablePullDown){
+                if (mListener != null && enablePullDown) {
                     mListener.onStartScroll(-1);
                 }
 
@@ -147,35 +155,37 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         //不限制顶部的高度
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
-        getChildAt(0).measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
-
         //设置Container布局高度
         ViewGroup.LayoutParams params = mContainer.getLayoutParams();
         params.height = getMeasuredHeight() - mTopPadding;
+        mContainer.setLayoutParams(params);
 
         //固定导航头高度
         int navHeight = 0;
-        if(mNav != null){
+        if (mNav != null) {
             navHeight = mNav.getMeasuredHeight();
         }
 
-        if(mViewPager != null) {
-            params = mViewPager.getLayoutParams();
-            params.height = getMeasuredHeight() - navHeight - mTopPadding;
-        }else if(mRecycView != null){
-            params = mRecycView.getLayoutParams();
-            params.height = getMeasuredHeight() - navHeight - mTopPadding;
-
+        //设置mViewPager或mViewPager的高度
+        if (mViewPager != null) {
+            ViewGroup.LayoutParams params1 = mViewPager.getLayoutParams();
+            params1.height = params.height - navHeight;
+        } else if (mRecycView != null) {
+            ViewGroup.LayoutParams params2 = mRecycView.getLayoutParams();
+            params2.height = params.height - navHeight;
+            mRecycView.setLayoutParams(params2);
         }
-
-        setMeasuredDimension(getMeasuredWidth(), mHeaderView.getMeasuredHeight() +
-                mContainer.getMeasuredHeight());
     }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         mMaxScrollDistance = mHeaderView.getMeasuredHeight() - mTopPadding;
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        super.onLayout(changed, l, t, r, b);
     }
 
     @Override
@@ -194,7 +204,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     @Override
     public boolean onStartNestedScroll(View child, View target, int nestedScrollAxes) {
         Log.e(TAG, "onStartNestedScroll");
-        if(mListener != null && !isFulledHideHeader()){
+        if (mListener != null && !isFulledHideHeader()) {
             mListener.onStartScroll(1);
         }
         return true;
@@ -241,7 +251,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         if (hiddenTop || showTop) {
 
             //头部折叠后不支持下拉展开头部
-            if(showTop && !enablePullDown){
+            if (showTop && !enablePullDown) {
                 return;
             }
 
@@ -253,10 +263,10 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
                  * 检测targetY不能小于0
                  */
                 float targetY = getScrollY() + dy;
-                if(targetY > mMaxScrollDistance){
+                if (targetY > mMaxScrollDistance) {
                     targetY = mMaxScrollDistance;
                 }
-                if(targetY < 0){
+                if (targetY < 0) {
                     targetY = 0;
                 }
                 scrollTo(0, (int) targetY);
@@ -265,12 +275,13 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
                  * 处理同上场景的bug
                  */
                 float targetY = mContainer.getTranslationY() - dy;
-                if(-targetY > mMaxScrollDistance) {
+                if (-targetY > mMaxScrollDistance) {
                     targetY = -mMaxScrollDistance;
                 }
-                if(targetY > 0){
+                if (targetY > 0) {
                     targetY = 0;
                 }
+                Log.d(TAG, "targetY=" + targetY);
                 mContainer.setTranslationY(targetY);
                 //修改透明度
                 setAlpha();
@@ -396,13 +407,13 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
      */
     private int computeDuration(float velocityY) {
         int distance = 0;
-        if(mType == SLIDING_ALL) {
+        if (mType == SLIDING_ALL) {
             if (velocityY > 0) {//向上滑
                 distance = Math.abs(mMaxScrollDistance - getScrollY());
             } else {//向下滑
                 distance = Math.abs(getScrollY());
             }
-        }else if(mType == SLIDING_CONTAINER){
+        } else if (mType == SLIDING_CONTAINER) {
             if (velocityY > 0) {
                 distance = (int) Math.abs(mMaxScrollDistance + mContainer.getTranslationY());
             } else {
@@ -570,9 +581,9 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         }
     }
 
-    private void setAlpha(){
+    private void setAlpha() {
         float ratio = getScrollRatio();
-        if(ratio < 0.5f){
+        if (ratio < 0.5f) {
             ratio = 0.5f;
         }
         //mHeaderView.setAlpha(ratio);//修改透明度
@@ -605,11 +616,14 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     public interface ScrollListener {
         /**
          * 开始滚动
+         *
          * @param direction 1:向上滚动；-1向上滚动
          */
         void onStartScroll(int direction);
+
         /**
          * 头部滚动回调
+         *
          * @param percentage 1:头部完全隐藏；0头部完全显示
          */
         void onScroll(float percentage);

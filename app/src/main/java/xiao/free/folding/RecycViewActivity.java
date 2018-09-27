@@ -41,7 +41,7 @@ public class RecycViewActivity extends FragmentActivity {
             mDatas.add("item -> " + i);
         }
 
-        mStickyNavLayout.setEnablePullDown(false);
+        mStickyNavLayout.setEnablePullDown(true);
         mStickyNavLayout.setListener(new StickyNavLayout.ScrollListener() {
 
 

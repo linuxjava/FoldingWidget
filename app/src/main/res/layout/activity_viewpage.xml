@@ -1,47 +1,53 @@
-<xiao.free.folding.view.StickyNavLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/stickynavlayout"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <RelativeLayout
-        android:id="@id/id_stickynavlayout_topview"
-        android:layout_width="match_parent"
-        android:layout_height="256dp">
-
-        <ImageView
-            android:layout_width="match_parent"
-            android:layout_height="256dp"
-            android:fitsSystemWindows="true"
-            android:scaleType="centerCrop"
-            android:src="@color/colorPrimary"/>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="256dp"
-            android:gravity="center"
-            android:text="折叠控件"
-            android:textSize="30sp"
-            android:textStyle="bold" />
-    </RelativeLayout>
-
-    <LinearLayout
-        android:id="@+id/container"
+    <xiao.free.folding.view.StickyNavLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/stickynavlayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <xiao.free.folding.view.SimpleViewPagerIndicator
-            android:id="@id/id_stickynavlayout_indicator"
+        <RelativeLayout
+            android:id="@id/id_stickynavlayout_topview"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:background="#ffffffff" />
+            android:layout_height="256dp">
 
-        <android.support.v4.view.ViewPager
-            android:id="@id/id_stickynavlayout_viewpager"
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="256dp"
+                android:fitsSystemWindows="true"
+                android:scaleType="centerCrop"
+                android:src="@color/colorPrimary" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="256dp"
+                android:gravity="center"
+                android:text="折叠控件"
+                android:textSize="30sp"
+                android:textStyle="bold" />
+        </RelativeLayout>
+
+        <LinearLayout
+            android:id="@+id/container"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-    </LinearLayout>
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <xiao.free.folding.view.SimpleViewPagerIndicator
+                android:id="@id/id_stickynavlayout_indicator"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="#ffffffff" />
+
+            <android.support.v4.view.ViewPager
+                android:id="@id/id_stickynavlayout_viewpager"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </LinearLayout>
 
 
-</xiao.free.folding.view.StickyNavLayout>
+    </xiao.free.folding.view.StickyNavLayout>
+
+</RelativeLayout>

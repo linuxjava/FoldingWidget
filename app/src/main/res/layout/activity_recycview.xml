@@ -1,55 +1,64 @@
-<xiao.free.folding.view.StickyNavLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/stickynavlayout"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <RelativeLayout
-        android:id="@id/id_stickynavlayout_topview"
-        android:layout_width="match_parent"
-        android:layout_height="256dp">
-
-        <ImageView
-            android:layout_width="match_parent"
-            android:layout_height="256dp"
-            android:fitsSystemWindows="true"
-            android:scaleType="centerCrop"
-            android:src="@color/colorPrimary" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="256dp"
-            android:gravity="center"
-            android:text="折叠控件"
-            android:textSize="30sp"
-            android:textStyle="bold" />
-    </RelativeLayout>
-
-    <LinearLayout
-        android:id="@+id/container"
+    <xiao.free.folding.view.StickyNavLayout
+        android:id="@+id/stickynavlayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:fitsSystemWindows="true"
         android:orientation="vertical">
 
         <RelativeLayout
-            android:id="@id/id_stickynavlayout_indicator"
+            android:id="@id/id_stickynavlayout_topview"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:background="@android:color/darker_gray"
-            android:onClick="OnExpand">
+            android:layout_height="256dp">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="256dp"
+                android:fitsSystemWindows="true"
+                android:scaleType="centerCrop"
+                android:src="@color/colorPrimary" />
 
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:text="我是固定导航（可以有可无）" />
+                android:layout_width="match_parent"
+                android:layout_height="256dp"
+                android:gravity="center"
+                android:text="折叠控件"
+                android:textSize="30sp"
+                android:textStyle="bold" />
         </RelativeLayout>
 
-        <android.support.v7.widget.RecyclerView
-            android:id="@id/id_stickynavlayout_recycview"
+
+        <LinearLayout
+            android:id="@+id/container"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-    </LinearLayout>
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <RelativeLayout
+                android:id="@id/id_stickynavlayout_indicator"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@android:color/darker_gray"
+                android:onClick="OnExpand">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="我是固定导航（可以有可无）" />
+            </RelativeLayout>
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@id/id_stickynavlayout_recycview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </LinearLayout>
 
 
-</xiao.free.folding.view.StickyNavLayout>
+    </xiao.free.folding.view.StickyNavLayout>
+
+</RelativeLayout>
