@@ -1,7 +1,7 @@
 package xiao.free.folding.view;
 
+import android.animation.Animator;
 import android.animation.ValueAnimator;
-import android.app.Activity;
 import android.content.Context;
 import android.support.v4.view.NestedScrollingParent;
 import android.support.v4.view.ViewCompat;
@@ -16,7 +16,6 @@ import android.view.animation.Interpolator;
 import android.widget.LinearLayout;
 
 import xiao.free.folding.R;
-import xiao.free.folding.util.AppUtils;
 
 
 public class StickyNavLayout extends LinearLayout implements NestedScrollingParent {
@@ -25,7 +24,10 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     private static final int DEFAULT_TOP_PADDING = 0;
     private static final int SLIDING_ALL = 1;//整个布局整体上滑
     private static final int SLIDING_CONTAINER = 2;//只有底部container容器向上滑动，头部不动
-    private int mType = SLIDING_ALL;
+
+    private static final int DEFAULT_ANIMATION_DURATION = 300;//默认动画时间
+
+    private int mType = SLIDING_CONTAINER;
     private boolean isFling = false;//是否快速滑动
     private int mTopPadding = 0;//滑动到顶部的padding
     private View mHeaderView;//头部View
@@ -44,10 +46,6 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         setOrientation(LinearLayout.VERTICAL);
 
         mInterpolator = new AccelerateInterpolator();
-
-        Log.d(TAG, "StatusBarHeight=" + AppUtils.getStatusBarHeight(getContext()));
-        Log.d(TAG, "VirtualNavBarHeight=" + StickyNavLayoutHelper.getVirtualNavBarHeight(getContext()));
-        Log.d(TAG, StickyNavLayoutHelper.getRealHeight(getContext()) + "::" + StickyNavLayoutHelper.getHeight(getContext()));
     }
 
     public void setListener(ScrollListener mListener) {
@@ -141,8 +139,8 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     @Override
     protected void onFinishInflate() {
         super.onFinishInflate();
-        mHeaderView = findViewById(R.id.id_stickynavlayout_topview);
-        mContainer = findViewById(R.id.container);
+        mHeaderView = findViewById(R.id.id_stickynavlayout_headerview);
+        mContainer = findViewById(R.id.id_stickynavlayout_container);
         mNav = findViewById(R.id.id_stickynavlayout_indicator);
         mViewPager = findViewById(R.id.id_stickynavlayout_viewpager);
         mRecycView = findViewById(R.id.id_stickynavlayout_recycview);
@@ -217,24 +215,28 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
 
     @Override
     public void onStopNestedScroll(View target) {
-        //如果不是快速滑动则执行自动滚动
-        if (!isFling) {
-            /**
-             * 1.头部已完全隐藏时继续向上快速滑动
-             * 2.头部已完全显示时继续向下快速滑动
-             */
-            if (isFulledHideHeader() || isFulledShowHeader()) {
-                return;
-            }
-
-            if (mType == SLIDING_ALL) {
-                autoScroll(300);
-            } else {
-                autoScroll2(300);
-            }
-        } else {
-            isFling = false;
+        if (isAnimation) {
+            return;
         }
+
+        //如果不是快速滑动则执行自动滚动
+//        if (!isFling) {
+        /**
+         * 1.头部已完全隐藏时继续向上快速滑动
+         * 2.头部已完全显示时继续向下快速滑动
+         */
+        if (isFulledHideHeader() || isFulledShowHeader()) {
+            return;
+        }
+
+        if (mType == SLIDING_ALL) {
+            autoScroll(DEFAULT_ANIMATION_DURATION);
+        } else {
+            autoScroll2(DEFAULT_ANIMATION_DURATION);
+        }
+//        } else {
+//            isFling = false;
+//        }
     }
 
     @Override
@@ -244,6 +246,10 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
 
     @Override
     public void onNestedPreScroll(View target, int dx, int dy, int[] consumed) {
+        if (isAnimation) {
+            return;
+        }
+
         boolean hiddenTop = isHiddenHeader(dy);
         boolean showTop = isShowHeader(target, dy);
 
@@ -281,7 +287,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
                 if (targetY > 0) {
                     targetY = 0;
                 }
-                Log.d(TAG, "targetY=" + targetY);
+
                 mContainer.setTranslationY(targetY);
                 //修改透明度
                 setAlpha();
@@ -348,9 +354,21 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         }
     }
 
+    private boolean isAnimation = false;
+
+    /**
+     * @param target
+     * @param velocityX
+     * @param velocityY Vertical velocity in pixels per second(正数：向上滚动;负数：向下滚动)
+     * @param consumed
+     * @return
+     */
     @Override
     public boolean onNestedFling(View target, float velocityX, float velocityY, boolean consumed) {
-        isFling = true;
+        //isFling = true;
+        if (isAnimation) {
+            return false;
+        }
 
         /**
          * 1.头部已完全隐藏时继续向上快速滑动
@@ -360,6 +378,10 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
             return false;
         }
 
+        /**
+         * 控制处理如下下滑动场景：头部已折叠，快速惯性下滑时
+         * 如果recyclerView第一个可见child的位置>TOP_CHILD_FLING_THRESHOLD，惯性滑动不可以将头部展开；否则，惯性滑动可以将头部展开
+         */
         if (target instanceof RecyclerView && velocityY < 0) {
             //如果是recyclerView 根据判断第一个元素是哪个位置可以判断是否消耗
             //这里判断如果第一个元素的位置是大于TOP_CHILD_FLING_THRESHOLD的
@@ -414,7 +436,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
                 distance = Math.abs(getScrollY());
             }
         } else if (mType == SLIDING_CONTAINER) {
-            if (velocityY > 0) {
+            if (velocityY > 0) {//向上滑
                 distance = (int) Math.abs(mMaxScrollDistance + mContainer.getTranslationY());
             } else {
                 distance = (int) Math.abs(mContainer.getTranslationY());
@@ -453,11 +475,18 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
                     }
                 }
             });
+            mOffsetAnimator.addListener(new AnimatorCustomListener() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    isAnimation = false;
+                }
+            });
         } else {
             mOffsetAnimator.cancel();
         }
         mOffsetAnimator.setDuration(duration);
 
+        isAnimation = true;
         if (currentOffset < headerHeight / 2) {
             //显示头部
             mOffsetAnimator.setIntValues(currentOffset, 0);
@@ -488,11 +517,17 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
                     }
                 }
             });
+            mOffsetAnimator.addListener(new AnimatorCustomListener() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    isAnimation = false;
+                }
+            });
         } else {
             mOffsetAnimator.cancel();
         }
         mOffsetAnimator.setDuration(duration);
-
+        isAnimation = true;
         if (Math.abs(currentOffset) < headerHeight / 2) {
             //显示头部
             mOffsetAnimator.setFloatValues(currentOffset, 0);
@@ -522,19 +557,27 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
                     }
                 }
             });
+            mOffsetAnimator.addListener(new AnimatorCustomListener() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    isAnimation = false;
+                }
+            });
         } else {
             mOffsetAnimator.cancel();
         }
-        mOffsetAnimator.setDuration(Math.min(duration, 400));
+        mOffsetAnimator.setDuration(Math.min(duration, DEFAULT_ANIMATION_DURATION));
 
         if (velocityY >= 0) {
             //隐藏头部
+            isAnimation = true;
             mOffsetAnimator.setIntValues(currentOffset, headerHeight - mTopPadding);
             mOffsetAnimator.start();
         } else {
             //如果子View没有消耗down事件 那么就让自身滑倒0位置
             if (!consumed) {
                 //显示头部
+                isAnimation = true;
                 mOffsetAnimator.setIntValues(currentOffset, 0);
                 mOffsetAnimator.start();
             }
@@ -561,19 +604,27 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
                     }
                 }
             });
+            mOffsetAnimator.addListener(new AnimatorCustomListener() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    isAnimation = false;
+                }
+            });
         } else {
             mOffsetAnimator.cancel();
         }
-        mOffsetAnimator.setDuration(Math.min(duration, 400));
+        mOffsetAnimator.setDuration(Math.min(duration, DEFAULT_ANIMATION_DURATION));
 
         if (velocityY >= 0) {
             //隐藏头部
+            isAnimation = true;
             mOffsetAnimator.setFloatValues(currentOffset, -(headerHeight - mTopPadding));
             mOffsetAnimator.start();
         } else {
             //如果子View没有消耗down事件 那么就让自身滑倒0位置
             if (!consumed) {
                 //显示头部
+                isAnimation = true;
                 mOffsetAnimator.setFloatValues(currentOffset, 0);
                 mOffsetAnimator.start();
             }

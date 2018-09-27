@@ -9,7 +9,7 @@
         android:orientation="vertical">
 
         <RelativeLayout
-            android:id="@id/id_stickynavlayout_topview"
+            android:id="@id/id_stickynavlayout_headerview"
             android:layout_width="match_parent"
             android:layout_height="256dp">
 

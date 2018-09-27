@@ -5,12 +5,10 @@
     <xiao.free.folding.view.StickyNavLayout
         android:id="@+id/stickynavlayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fitsSystemWindows="true"
-        android:orientation="vertical">
+        android:layout_height="match_parent">
 
         <RelativeLayout
-            android:id="@id/id_stickynavlayout_topview"
+            android:id="@id/id_stickynavlayout_headerview"
             android:layout_width="match_parent"
             android:layout_height="256dp">
 
@@ -32,7 +30,7 @@
 
 
         <LinearLayout
-            android:id="@+id/container"
+            android:id="@id/id_stickynavlayout_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
