@@ -1,4 +1,4 @@
-package xiao.free.folding;
+package xiao.free.folding.demo;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -17,7 +17,8 @@ import com.zhy.base.adapter.recyclerview.OnItemClickListener;
 import java.util.ArrayList;
 import java.util.List;
 
-import xiao.free.folding.view.StickyNavLayout;
+import xiao.free.folding.R;
+import xiao.free.folding.lib.StickyNavLayout;
 
 /**
  * Created by robincxiao on 2018/8/31.
@@ -43,12 +44,6 @@ public class RecycViewActivity extends FragmentActivity {
 
         mStickyNavLayout.setEnablePullDown(true);
         mStickyNavLayout.setListener(new StickyNavLayout.ScrollListener() {
-
-
-            @Override
-            public void onStartScroll(int direction) {
-                Log.d("xiao1", "onStartScroll direction = " + direction);
-            }
 
             @Override
             public void onScroll(float percentage) {

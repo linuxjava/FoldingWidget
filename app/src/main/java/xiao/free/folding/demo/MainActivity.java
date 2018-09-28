@@ -1,11 +1,12 @@
-package xiao.free.folding;
+package xiao.free.folding.demo;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.PersistableBundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
 import android.view.View;
+
+import xiao.free.folding.R;
 
 /**
  * Created by robincxiao on 2018/8/31.

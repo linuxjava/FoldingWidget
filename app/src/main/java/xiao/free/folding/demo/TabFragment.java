@@ -1,4 +1,4 @@
-package xiao.free.folding;
+package xiao.free.folding.demo;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -15,6 +15,8 @@ import com.zhy.base.adapter.recyclerview.OnItemClickListener;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import xiao.free.folding.R;
 
 public class TabFragment extends Fragment
 {

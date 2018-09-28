@@ -2,7 +2,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <xiao.free.folding.view.StickyNavLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <xiao.free.folding.lib.StickyNavLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/stickynavlayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -27,15 +27,39 @@
                 android:text="折叠控件"
                 android:textSize="30sp"
                 android:textStyle="bold" />
+
+            <RelativeLayout
+                android:id="@+id/layout_title_bar"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="@android:color/white"
+                android:alpha="0">
+
+                <ImageView
+                    android:id="@+id/img_back"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="10dp"
+                    android:src="@mipmap/ic_back" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="Title"
+                    android:textColor="#FF000000"
+                    android:textSize="18sp" />
+            </RelativeLayout>
         </RelativeLayout>
 
         <LinearLayout
-            android:id="@+id/container"
+            android:id="@id/id_stickynavlayout_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
 
-            <xiao.free.folding.view.SimpleViewPagerIndicator
+            <xiao.free.folding.lib.SimpleViewPagerIndicator
                 android:id="@id/id_stickynavlayout_indicator"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
@@ -48,6 +72,6 @@
         </LinearLayout>
 
 
-    </xiao.free.folding.view.StickyNavLayout>
+    </xiao.free.folding.lib.StickyNavLayout>
 
 </RelativeLayout>

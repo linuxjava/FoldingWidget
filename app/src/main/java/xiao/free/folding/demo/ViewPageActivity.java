@@ -1,4 +1,4 @@
-package xiao.free.folding;
+package xiao.free.folding.demo;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -7,9 +7,11 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.util.Log;
+import android.view.ViewGroup;
 
-import xiao.free.folding.view.SimpleViewPagerIndicator;
-import xiao.free.folding.view.StickyNavLayout;
+import xiao.free.folding.R;
+import xiao.free.folding.lib.SimpleViewPagerIndicator;
+import xiao.free.folding.lib.StickyNavLayout;
 
 
 public class ViewPageActivity extends FragmentActivity {
@@ -19,6 +21,7 @@ public class ViewPageActivity extends FragmentActivity {
     private FragmentPagerAdapter mAdapter;
     private TabFragment[] mFragments = new TabFragment[mTitles.length];
     private StickyNavLayout mStickyNavLayout;
+    private ViewGroup mTitleLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,17 +34,13 @@ public class ViewPageActivity extends FragmentActivity {
     }
 
     private void initEvents() {
+        mStickyNavLayout.setTopPadding(56);
         mStickyNavLayout.setListener(new StickyNavLayout.ScrollListener() {
-
-
-            @Override
-            public void onStartScroll(int direction) {
-
-            }
 
             @Override
             public void onScroll(float percentage) {
                 Log.d("xiao1", "percentage=" + percentage);
+                mTitleLayout.setAlpha(percentage);
             }
         });
 
@@ -93,7 +92,8 @@ public class ViewPageActivity extends FragmentActivity {
         mStickyNavLayout = (StickyNavLayout) findViewById(R.id.stickynavlayout);
         mIndicator = (SimpleViewPagerIndicator) findViewById(R.id.id_stickynavlayout_indicator);
         mViewPager = (ViewPager) findViewById(R.id.id_stickynavlayout_viewpager);
-		
+        mTitleLayout =  findViewById(R.id.layout_title_bar);
+
 		/*
 		RelativeLayout ll = (RelativeLayout) findViewById(R.id.id_stickynavlayout_topview);
 		TextView tv = new TextView(this);

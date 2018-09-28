@@ -1,4 +1,4 @@
-package xiao.free.folding.view;
+package xiao.free.folding.lib;
 
 import android.content.Context;
 import android.graphics.Canvas;
