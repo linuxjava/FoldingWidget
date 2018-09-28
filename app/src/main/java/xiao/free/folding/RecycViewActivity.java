@@ -79,7 +79,11 @@ public class RecycViewActivity extends FragmentActivity {
     }
 
     public void OnExpand(View view){
-        mStickyNavLayout.expand(500);
+        if(mStickyNavLayout.isFulledHideHeader()) {
+            mStickyNavLayout.expandFold(true,500);
+        }else {
+            mStickyNavLayout.expandFold(false,500);
+        }
     }
 
 }

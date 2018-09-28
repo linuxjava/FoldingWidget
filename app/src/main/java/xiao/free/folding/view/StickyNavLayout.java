@@ -1,51 +1,44 @@
 package xiao.free.folding.view;
 
-import android.animation.Animator;
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.support.v4.view.NestedScrollingParent;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AccelerateInterpolator;
-import android.view.animation.Interpolator;
 import android.widget.LinearLayout;
+import android.widget.Scroller;
 
 import xiao.free.folding.R;
+import xiao.free.folding.util.DensityUtils;
 
 
 public class StickyNavLayout extends LinearLayout implements NestedScrollingParent {
     public static final String TAG = "StickyNavLayout";
     private static final int TOP_CHILD_FLING_THRESHOLD = 3;
-    private static final int DEFAULT_TOP_PADDING = 0;
+    private static final int DEFAULT_TOP_PADDING = 40;
+    private static final int DEFAULT_ANIMATION_DURATION = 600;//默认动画时间
     private static final int SLIDING_ALL = 1;//整个布局整体上滑
     private static final int SLIDING_CONTAINER = 2;//只有底部container容器向上滑动，头部不动
-
-    private static final int DEFAULT_ANIMATION_DURATION = 300;//默认动画时间
-
     private int mType = SLIDING_CONTAINER;
-    private boolean isFling = false;//是否快速滑动
     private int mTopPadding = 0;//滑动到顶部的padding
     private View mHeaderView;//头部View
     private View mContainer;//底部内容容器
     private View mNav;//固定导航栏
     private ViewGroup mViewPager;
-    private RecyclerView mRecycView;
+    private RecyclerView mRecyclerView;
     private int mMaxScrollDistance;//最大滚动距离headerViewHeight-mTopPadding
-    private ValueAnimator mOffsetAnimator;
-    private Interpolator mInterpolator;
     private ScrollListener mListener;
     private boolean enablePullDown = true;//头部折叠后，是否支持下拉展开
+    private Scroller mScroller;
 
     public StickyNavLayout(Context context, AttributeSet attrs) {
         super(context, attrs);
         setOrientation(LinearLayout.VERTICAL);
 
-        mInterpolator = new AccelerateInterpolator();
+        mScroller = new Scroller(getContext());
     }
 
     public void setListener(ScrollListener mListener) {
@@ -62,76 +55,37 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     }
 
     /**
-     * 展开头部
+     * 展开或隐藏头部
      *
+     * @param isExpand true:展开;false:隐藏
      * @param duration
      */
-    public void expand(int duration) {
+    public void expandFold(boolean isExpand, int duration) {
         if (mHeaderView == null) {
             return;
         }
 
+        if (!mScroller.isFinished()) {
+            return;
+        }
+
         if (mType == SLIDING_ALL) {
-            if (isFulledHideHeader()) {
-                if (mListener != null) {
-                    mListener.onStartScroll(-1);
-                }
-
-                final int currentOffset = getScrollY();
-                //显示头部
-                if (mOffsetAnimator == null) {
-                    mOffsetAnimator = new ValueAnimator();
-                    mOffsetAnimator.setInterpolator(mInterpolator);
-                    mOffsetAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                        @Override
-                        public void onAnimationUpdate(ValueAnimator animation) {
-                            if (animation.getAnimatedValue() instanceof Integer) {
-                                int y = (Integer) animation.getAnimatedValue();
-                                if (y != getScrollY()) {
-                                    scrollTo(0, y);
-                                    callListener();
-                                }
-
-                            }
-                        }
-                    });
-                } else {
-                    mOffsetAnimator.cancel();
-                }
-                mOffsetAnimator.setDuration(duration);
-                mOffsetAnimator.setIntValues(currentOffset, 0);
-                mOffsetAnimator.start();
+            if (mListener != null) {
+                mListener.onStartScroll(-1);
+            }
+            if (isExpand) {
+                scrollShowHeader(duration);
+            } else {
+                scrollHideHeader(duration);
             }
         } else {
-            if (isFulledHideHeader()) {
-                if (mListener != null && enablePullDown) {
-                    mListener.onStartScroll(-1);
-                }
-
-                final float currentOffset = mContainer.getTranslationY();
-                //显示头部
-                if (mOffsetAnimator == null) {
-                    mOffsetAnimator = new ValueAnimator();
-                    mOffsetAnimator.setInterpolator(mInterpolator);
-                    mOffsetAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                        @Override
-                        public void onAnimationUpdate(ValueAnimator animation) {
-                            if (animation.getAnimatedValue() instanceof Float) {
-                                float y = (Float) animation.getAnimatedValue();
-                                if (y != mContainer.getTranslationY()) {
-                                    mContainer.setTranslationY(y);
-                                    setAlpha();//修改透明度
-                                    callListener();
-                                }
-                            }
-                        }
-                    });
-                } else {
-                    mOffsetAnimator.cancel();
-                }
-                mOffsetAnimator.setDuration(duration);
-                mOffsetAnimator.setFloatValues(currentOffset, 0);
-                mOffsetAnimator.start();
+            if (mListener != null && enablePullDown) {
+                mListener.onStartScroll(-1);
+            }
+            if (isExpand) {
+                scrollShowHeader(duration);
+            } else {
+                scrollHideHeader(duration);
             }
         }
     }
@@ -143,9 +97,9 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         mContainer = findViewById(R.id.id_stickynavlayout_container);
         mNav = findViewById(R.id.id_stickynavlayout_indicator);
         mViewPager = findViewById(R.id.id_stickynavlayout_viewpager);
-        mRecycView = findViewById(R.id.id_stickynavlayout_recycview);
+        mRecyclerView = findViewById(R.id.id_stickynavlayout_recycview);
 
-        mTopPadding = dp2px(getContext(), DEFAULT_TOP_PADDING);
+        mTopPadding = DensityUtils.dp2px(getContext(), DEFAULT_TOP_PADDING);
     }
 
     @Override
@@ -168,10 +122,10 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         if (mViewPager != null) {
             ViewGroup.LayoutParams params1 = mViewPager.getLayoutParams();
             params1.height = params.height - navHeight;
-        } else if (mRecycView != null) {
-            ViewGroup.LayoutParams params2 = mRecycView.getLayoutParams();
+        } else if (mRecyclerView != null) {
+            ViewGroup.LayoutParams params2 = mRecyclerView.getLayoutParams();
             params2.height = params.height - navHeight;
-            mRecycView.setLayoutParams(params2);
+            mRecyclerView.setLayoutParams(params2);
         }
     }
 
@@ -182,8 +136,15 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     }
 
     @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        super.onLayout(changed, l, t, r, b);
+    public void computeScroll() {
+        if (mScroller.computeScrollOffset()) {
+            if (mType == SLIDING_ALL) {
+                scrollTo(0, mScroller.getCurrY());
+            } else if (mType == SLIDING_CONTAINER) {
+                mContainer.setTranslationY(mScroller.getCurrY());
+            }
+            invalidate();
+        }
     }
 
     @Override
@@ -215,12 +176,11 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
 
     @Override
     public void onStopNestedScroll(View target) {
-        if (isAnimation) {
+        if (!mScroller.isFinished()) {
+            Log.e(TAG, "onStopNestedScroll_isFinished");
             return;
         }
 
-        //如果不是快速滑动则执行自动滚动
-//        if (!isFling) {
         /**
          * 1.头部已完全隐藏时继续向上快速滑动
          * 2.头部已完全显示时继续向下快速滑动
@@ -229,14 +189,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
             return;
         }
 
-        if (mType == SLIDING_ALL) {
-            autoScroll(DEFAULT_ANIMATION_DURATION);
-        } else {
-            autoScroll2(DEFAULT_ANIMATION_DURATION);
-        }
-//        } else {
-//            isFling = false;
-//        }
+        autoScroll(DEFAULT_ANIMATION_DURATION);
     }
 
     @Override
@@ -246,14 +199,14 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
 
     @Override
     public void onNestedPreScroll(View target, int dx, int dy, int[] consumed) {
-        if (isAnimation) {
+        if (!mScroller.isFinished()) {
+            Log.e(TAG, "onNestedPreScroll_isFinished");
             return;
         }
 
         boolean hiddenTop = isHiddenHeader(dy);
         boolean showTop = isShowHeader(target, dy);
 
-        Log.e(TAG, hiddenTop + "::" + showTop);
         if (hiddenTop || showTop) {
 
             //头部折叠后不支持下拉展开头部
@@ -289,8 +242,6 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
                 }
 
                 mContainer.setTranslationY(targetY);
-                //修改透明度
-                setAlpha();
             }
             callListener();
             consumed[1] = dy;
@@ -333,7 +284,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
      *
      * @return
      */
-    private boolean isFulledHideHeader() {
+    public boolean isFulledHideHeader() {
         if (mType == SLIDING_ALL) {
             return getScrollY() >= mMaxScrollDistance;
         } else {
@@ -346,7 +297,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
      *
      * @return
      */
-    private boolean isFulledShowHeader() {
+    public boolean isFulledShowHeader() {
         if (mType == SLIDING_ALL) {
             return getScrollY() <= 0;
         } else {
@@ -354,7 +305,14 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         }
     }
 
-    private boolean isAnimation = false;
+    /**
+     * 获取RecyclerView最小可见高度
+     *
+     * @return
+     */
+    public int getRecyclerViewMinVisibleHeight() {
+        return mRecyclerView.getMeasuredHeight() - (mHeaderView.getMeasuredHeight() - mTopPadding);
+    }
 
     /**
      * @param target
@@ -365,8 +323,8 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
      */
     @Override
     public boolean onNestedFling(View target, float velocityX, float velocityY, boolean consumed) {
-        //isFling = true;
-        if (isAnimation) {
+        if (!mScroller.isFinished()) {
+            Log.e(TAG, "onNestedFling_isFinished");
             return false;
         }
 
@@ -417,8 +375,101 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
 
     @Override
     public int getNestedScrollAxes() {
-        Log.e(TAG, "getNestedScrollAxes");
         return 0;
+    }
+
+    private void autoScroll(int duration) {
+        if (mType == SLIDING_ALL) {
+            final int currentOffset = getScrollY();
+            final int headerHeight = mHeaderView.getHeight();
+
+            if (currentOffset < headerHeight / 2) {
+                scrollShowHeader(duration);
+            } else {
+                scrollHideHeader(duration);
+            }
+        } else if (mType == SLIDING_CONTAINER) {
+            final float currentOffset = mContainer.getTranslationY();
+            final int headerHeight = mHeaderView.getHeight();
+            if (Math.abs(currentOffset) < headerHeight / 2) {
+                //显示头部
+                scrollShowHeader(duration);
+            } else {
+                //隐藏头部
+                scrollHideHeader(duration);
+            }
+        }
+    }
+
+    private void flingScroll(float velocityY, final int duration, boolean consumed) {
+        if (velocityY >= 0) {
+            scrollHideHeader(duration);
+        } else {
+            if (!consumed) {
+                scrollShowHeader(duration);
+            }
+        }
+    }
+
+    private void flingScroll2(float velocityY, int duration, boolean consumed) {
+        if (velocityY >= 0) {
+            scrollHideHeader(duration);
+        } else {
+            //如果子View没有消耗down事件 那么就让自身滑倒0位置
+            if (!consumed) {
+                scrollShowHeader(duration);
+            }
+        }
+    }
+
+    /**
+     * 滚动隐藏HeaderView
+     */
+    private void scrollHideHeader(int duration) {
+        int startY = 0, dy = 0;
+        final int headerHeight = mHeaderView.getHeight();
+
+        if (mType == SLIDING_ALL) {
+            final int currentOffset = getScrollY();
+
+            startY = currentOffset;
+            dy = headerHeight - mTopPadding - currentOffset;
+        } else if (mType == SLIDING_CONTAINER) {
+            final float currentOffset = mContainer.getTranslationY();
+
+            startY = (int) currentOffset;
+            dy = (int) (-(headerHeight - mTopPadding) - currentOffset);
+        }
+
+        duration = Math.abs(dy) * duration / mMaxScrollDistance;
+        smoothScroll(startY, dy, duration);
+    }
+
+    /**
+     * 滚动显示HeaderView
+     */
+    private void scrollShowHeader(int duration) {
+        int startY = 0, dy = 0;
+
+        if (mType == SLIDING_ALL) {
+            final int currentOffset = getScrollY();
+
+            startY = currentOffset;
+            dy = -currentOffset;
+        } else if (mType == SLIDING_CONTAINER) {
+            final float currentOffset = mContainer.getTranslationY();
+
+            startY = (int) currentOffset;
+            dy = (int) -currentOffset;
+        }
+
+        duration = Math.abs(dy) * duration / mMaxScrollDistance;
+        smoothScroll(startY, dy, duration);
+    }
+
+    private void smoothScroll(int startY, int dy, int duration) {
+        mScroller.startScroll(0, startY, 0, dy, duration);
+        invalidate();
     }
 
     /**
@@ -443,7 +494,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
             }
         }
 
-        final int duration;
+        int duration;
         velocityY = Math.abs(velocityY);
         if (velocityY > 0) {
             duration = 3 * Math.round(1000 * (distance / velocityY));
@@ -451,194 +502,11 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
             final float distanceRatio = (float) distance / getHeight();
             duration = (int) ((distanceRatio + 1) * 150);
         }
+        duration = duration > DEFAULT_ANIMATION_DURATION ? DEFAULT_ANIMATION_DURATION : duration;
 
         return duration;
-
     }
 
-    private void autoScroll(int duration) {
-        final int currentOffset = getScrollY();
-        final int headerHeight = mHeaderView.getHeight();
-        if (mOffsetAnimator == null) {
-            mOffsetAnimator = new ValueAnimator();
-            mOffsetAnimator.setInterpolator(mInterpolator);
-            mOffsetAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                @Override
-                public void onAnimationUpdate(ValueAnimator animation) {
-                    if (animation.getAnimatedValue() instanceof Integer) {
-                        int y = (Integer) animation.getAnimatedValue();
-                        if (y != getScrollY()) {
-                            scrollTo(0, y);
-                            callListener();
-                        }
-
-                    }
-                }
-            });
-            mOffsetAnimator.addListener(new AnimatorCustomListener() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    isAnimation = false;
-                }
-            });
-        } else {
-            mOffsetAnimator.cancel();
-        }
-        mOffsetAnimator.setDuration(duration);
-
-        isAnimation = true;
-        if (currentOffset < headerHeight / 2) {
-            //显示头部
-            mOffsetAnimator.setIntValues(currentOffset, 0);
-            mOffsetAnimator.start();
-        } else {
-            //隐藏头部
-            mOffsetAnimator.setIntValues(currentOffset, headerHeight - mTopPadding);
-            mOffsetAnimator.start();
-        }
-    }
-
-    private void autoScroll2(int duration) {
-        final float currentOffset = mContainer.getTranslationY();
-        final int headerHeight = mHeaderView.getHeight();
-        if (mOffsetAnimator == null) {
-            mOffsetAnimator = new ValueAnimator();
-            mOffsetAnimator.setInterpolator(mInterpolator);
-            mOffsetAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                @Override
-                public void onAnimationUpdate(ValueAnimator animation) {
-                    if (animation.getAnimatedValue() instanceof Float) {
-                        float y = (Float) animation.getAnimatedValue();
-                        if (y != mContainer.getTranslationY()) {
-                            mContainer.setTranslationY(y);
-                            setAlpha();//修改透明度
-                            callListener();
-                        }
-                    }
-                }
-            });
-            mOffsetAnimator.addListener(new AnimatorCustomListener() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    isAnimation = false;
-                }
-            });
-        } else {
-            mOffsetAnimator.cancel();
-        }
-        mOffsetAnimator.setDuration(duration);
-        isAnimation = true;
-        if (Math.abs(currentOffset) < headerHeight / 2) {
-            //显示头部
-            mOffsetAnimator.setFloatValues(currentOffset, 0);
-            mOffsetAnimator.start();
-        } else {
-            //隐藏头部
-            mOffsetAnimator.setFloatValues(currentOffset, -(headerHeight - mTopPadding));
-            mOffsetAnimator.start();
-        }
-    }
-
-    private void flingScroll(float velocityY, final int duration, boolean consumed) {
-        final int currentOffset = getScrollY();
-        final int headerHeight = mHeaderView.getHeight();
-        if (mOffsetAnimator == null) {
-            mOffsetAnimator = new ValueAnimator();
-            mOffsetAnimator.setInterpolator(mInterpolator);
-            mOffsetAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                @Override
-                public void onAnimationUpdate(ValueAnimator animation) {
-                    if (animation.getAnimatedValue() instanceof Integer) {
-                        int y = (Integer) animation.getAnimatedValue();
-                        if (y != getScrollY()) {
-                            scrollTo(0, y);
-                        }
-                        callListener();
-                    }
-                }
-            });
-            mOffsetAnimator.addListener(new AnimatorCustomListener() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    isAnimation = false;
-                }
-            });
-        } else {
-            mOffsetAnimator.cancel();
-        }
-        mOffsetAnimator.setDuration(Math.min(duration, DEFAULT_ANIMATION_DURATION));
-
-        if (velocityY >= 0) {
-            //隐藏头部
-            isAnimation = true;
-            mOffsetAnimator.setIntValues(currentOffset, headerHeight - mTopPadding);
-            mOffsetAnimator.start();
-        } else {
-            //如果子View没有消耗down事件 那么就让自身滑倒0位置
-            if (!consumed) {
-                //显示头部
-                isAnimation = true;
-                mOffsetAnimator.setIntValues(currentOffset, 0);
-                mOffsetAnimator.start();
-            }
-
-        }
-    }
-
-    private void flingScroll2(float velocityY, final int duration, boolean consumed) {
-        final float currentOffset = mContainer.getTranslationY();
-        final int headerHeight = mHeaderView.getHeight();
-        if (mOffsetAnimator == null) {
-            mOffsetAnimator = new ValueAnimator();
-            mOffsetAnimator.setInterpolator(mInterpolator);
-            mOffsetAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                @Override
-                public void onAnimationUpdate(ValueAnimator animation) {
-                    if (animation.getAnimatedValue() instanceof Float) {
-                        float y = (Float) animation.getAnimatedValue();
-                        if (y != mContainer.getTranslationY()) {
-                            mContainer.setTranslationY(y);
-                            setAlpha();//修改透明度
-                            callListener();
-                        }
-                    }
-                }
-            });
-            mOffsetAnimator.addListener(new AnimatorCustomListener() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    isAnimation = false;
-                }
-            });
-        } else {
-            mOffsetAnimator.cancel();
-        }
-        mOffsetAnimator.setDuration(Math.min(duration, DEFAULT_ANIMATION_DURATION));
-
-        if (velocityY >= 0) {
-            //隐藏头部
-            isAnimation = true;
-            mOffsetAnimator.setFloatValues(currentOffset, -(headerHeight - mTopPadding));
-            mOffsetAnimator.start();
-        } else {
-            //如果子View没有消耗down事件 那么就让自身滑倒0位置
-            if (!consumed) {
-                //显示头部
-                isAnimation = true;
-                mOffsetAnimator.setFloatValues(currentOffset, 0);
-                mOffsetAnimator.start();
-            }
-
-        }
-    }
-
-    private void setAlpha() {
-        float ratio = getScrollRatio();
-        if (ratio < 0.5f) {
-            ratio = 0.5f;
-        }
-        //mHeaderView.setAlpha(ratio);//修改透明度
-    }
 
     private void callListener() {
         if (mListener != null) {
@@ -657,11 +525,6 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         } else {
             return 1.0f - Math.abs(mContainer.getTranslationY()) / mMaxScrollDistance;
         }
-    }
-
-    private int dp2px(Context context, float dpVal) {
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
-                dpVal, context.getResources().getDisplayMetrics());
     }
 
     public interface ScrollListener {
