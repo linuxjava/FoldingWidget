@@ -34,6 +34,7 @@ public class ViewPageActivity extends FragmentActivity {
     }
 
     private void initEvents() {
+        mStickyNavLayout.setType(StickyNavLayout.SLIDING_ALL);
         mStickyNavLayout.setTopPadding(56);
         mStickyNavLayout.setListener(new StickyNavLayout.ScrollListener() {
 

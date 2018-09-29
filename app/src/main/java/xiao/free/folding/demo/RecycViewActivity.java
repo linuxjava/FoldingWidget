@@ -43,6 +43,7 @@ public class RecycViewActivity extends FragmentActivity {
         }
 
         mStickyNavLayout.setEnablePullDown(true);
+        mStickyNavLayout.setAutoScroll(true);
         mStickyNavLayout.setListener(new StickyNavLayout.ScrollListener() {
 
             @Override

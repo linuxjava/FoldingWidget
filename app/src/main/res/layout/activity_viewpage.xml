@@ -27,30 +27,6 @@
                 android:text="折叠控件"
                 android:textSize="30sp"
                 android:textStyle="bold" />
-
-            <RelativeLayout
-                android:id="@+id/layout_title_bar"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:background="@android:color/white"
-                android:alpha="0">
-
-                <ImageView
-                    android:id="@+id/img_back"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_centerVertical="true"
-                    android:layout_marginLeft="10dp"
-                    android:src="@mipmap/ic_back" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_centerInParent="true"
-                    android:text="Title"
-                    android:textColor="#FF000000"
-                    android:textSize="18sp" />
-            </RelativeLayout>
         </RelativeLayout>
 
         <LinearLayout
@@ -74,4 +50,27 @@
 
     </xiao.free.folding.lib.StickyNavLayout>
 
+    <RelativeLayout
+        android:id="@+id/layout_title_bar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@android:color/white"
+        android:alpha="1">
+
+        <ImageView
+            android:id="@+id/img_back"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10dp"
+            android:src="@mipmap/ic_back" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="StickyNavLayout"
+            android:textColor="#FF000000"
+            android:textSize="18sp" />
+    </RelativeLayout>
 </RelativeLayout>

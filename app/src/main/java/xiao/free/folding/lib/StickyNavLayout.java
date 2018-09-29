@@ -3,6 +3,7 @@ package xiao.free.folding.lib;
 import android.content.Context;
 import android.support.v4.view.NestedScrollingParent;
 import android.support.v4.view.ViewCompat;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -22,8 +23,8 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     private static final int DEFAULT_TOP_PADDING = 0;
     private static final int DEFAULT_MAX_ANIMATION_DURATION = 600;//默认最大动画时间
     private static final int DEFAULT_MIN_ANIMATION_DURATION = 200;//默认最小动画时间
-    private static final int SLIDING_ALL = 1;//整个布局整体上滑
-    private static final int SLIDING_CONTAINER = 2;//只有底部container容器向上滑动，头部不动
+    public static final int SLIDING_ALL = 1;//整个布局整体上滑
+    public static final int SLIDING_CONTAINER = 2;//只有底部container容器向上滑动，头部不动
     private int mType = SLIDING_CONTAINER;
     private int mTopMargin = 0;//滑动到顶部的padding
     private View mHeaderView;//头部View
@@ -50,6 +51,10 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         mMinimumVelocity = ViewConfiguration.get(context)
                 .getScaledMinimumFlingVelocity();
         Log.d(TAG, mMaximumVelocity + ":" + mMinimumVelocity);
+    }
+
+    public void setType(int mType) {
+        this.mType = mType;
     }
 
     /**
@@ -346,51 +351,51 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     @Override
     public boolean onNestedFling(View target, float velocityX, float velocityY, boolean consumed) {
         Log.d(TAG, "onNestedFling.velocityY=" + velocityY);
-        if (!mScroller.isFinished()) {
-            return true;
-        }
+//        if (!mScroller.isFinished()) {
+//            return false;
+//        }
+//
+//        /**
+//         * 1.头部已完全隐藏时继续向上快速滑动
+//         * 2.头部已完全显示时继续向下快速滑动
+//         */
+//        if (isFulledHideHeader() || isFulledShowHeader()) {
+//            return false;
+//        }
+//
+//        /**
+//         * 控制处理如下下滑动场景：头部已折叠，快速惯性下滑时
+//         * 如果recyclerView第一个可见child的位置>TOP_CHILD_FLING_THRESHOLD，惯性滑动不可以将头部展开；否则，惯性滑动可以将头部展开
+//         */
+//        if (target instanceof RecyclerView && velocityY < 0) {
+//            //如果是recyclerView 根据判断第一个元素是哪个位置可以判断是否消耗
+//            //这里判断如果第一个元素的位置是大于TOP_CHILD_FLING_THRESHOLD的
+//            //认为已经被消耗，在animateScroll里不会对velocityY<0时做处理
+//            final RecyclerView recyclerView = (RecyclerView) target;
+//            final View firstChild = recyclerView.getChildAt(0);
+//            final int childAdapterPosition = recyclerView.getChildAdapterPosition(firstChild);
+//            consumed = childAdapterPosition > TOP_CHILD_FLING_THRESHOLD;
+//        }
+//
+//        int durarion = 0;
+//        if(consumed){
+//            durarion = computeDuration(velocityY);
+//        }else {
+//            durarion = computeDuration(0);
+//        }
+//
+//        if (mType == SLIDING_ALL) {
+//            flingScroll(velocityY, durarion, consumed);
+//        } else {
+//            flingScroll2(velocityY, durarion, consumed);
+//        }
 
-        /**
-         * 1.头部已完全隐藏时继续向上快速滑动
-         * 2.头部已完全显示时继续向下快速滑动
-         */
-        if (isFulledHideHeader() || isFulledShowHeader()) {
-            return false;
-        }
-
-        /**
-         * 控制处理如下下滑动场景：头部已折叠，快速惯性下滑时
-         * 如果recyclerView第一个可见child的位置>TOP_CHILD_FLING_THRESHOLD，惯性滑动不可以将头部展开；否则，惯性滑动可以将头部展开
-         */
-        if (target instanceof RecyclerView && velocityY < 0) {
-            //如果是recyclerView 根据判断第一个元素是哪个位置可以判断是否消耗
-            //这里判断如果第一个元素的位置是大于TOP_CHILD_FLING_THRESHOLD的
-            //认为已经被消耗，在animateScroll里不会对velocityY<0时做处理
-            final RecyclerView recyclerView = (RecyclerView) target;
-            final View firstChild = recyclerView.getChildAt(0);
-            final int childAdapterPosition = recyclerView.getChildAdapterPosition(firstChild);
-            consumed = childAdapterPosition > TOP_CHILD_FLING_THRESHOLD;
-        }
-
-        if (mType == SLIDING_ALL) {
-            if (!consumed) {
-                flingScroll(velocityY, computeDuration(0), consumed);
-            } else {
-                flingScroll(velocityY, computeDuration(velocityY), consumed);
-            }
-        } else {
-            if (!consumed) {
-                flingScroll2(velocityY, computeDuration(0), consumed);
-            } else {
-                flingScroll2(velocityY, computeDuration(velocityY), consumed);
-            }
-        }
-
-        return true;
+        return false;
     }
 
     /**
      * 父view是否拦截Fling事件
+     *
      * @param target
      * @param velocityX
      * @param velocityY
@@ -399,6 +404,33 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     @Override
     public boolean onNestedPreFling(View target, float velocityX, float velocityY) {
         Log.d(TAG, "onNestedPreFling");
+        if (!mScroller.isFinished()) {
+            return true;
+        }
+
+        if(target instanceof RecyclerView) {
+            final RecyclerView recyclerView = (RecyclerView) target;
+            final View firstChild = recyclerView.getChildAt(0);
+            final int firstVisibleItemPosition = recyclerView.getChildAdapterPosition(firstChild);
+            if(firstVisibleItemPosition == 0) {
+                if (velocityY > 0) {//向上
+                    if (!isFulledHideHeader()) {
+                        scrollHideHeader(computeDuration(velocityY));
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else {//向下
+                    if (!isFulledHideHeader()) {
+                        scrollShowHeader(computeDuration(velocityY));
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            }
+        }
+
         return false;
     }
 
@@ -408,26 +440,30 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     }
 
     private void autoScroll(int duration) {
-//        if (mType == SLIDING_ALL) {
-//            final int currentOffset = getScrollY();
-//            final int headerHeight = mHeaderView.getHeight();
-//
-//            if (currentOffset < headerHeight / 2) {
-//                scrollShowHeader(duration);
-//            } else {
-//                scrollHideHeader(duration);
-//            }
-//        } else if (mType == SLIDING_CONTAINER) {
-//            final float currentOffset = mContainer.getTranslationY();
-//            final int headerHeight = mHeaderView.getHeight();
-//            if (Math.abs(currentOffset) < headerHeight / 2) {
-//                //显示头部
-//                scrollShowHeader(duration);
-//            } else {
-//                //隐藏头部
-//                scrollHideHeader(duration);
-//            }
-//        }
+        if(!isAutoScroll){
+            return;
+        }
+
+        if (mType == SLIDING_ALL) {
+            final int currentOffset = getScrollY();
+            final int headerHeight = mHeaderView.getHeight();
+
+            if (currentOffset < headerHeight / 2) {
+                scrollShowHeader(duration);
+            } else {
+                scrollHideHeader(duration);
+            }
+        } else if (mType == SLIDING_CONTAINER) {
+            final float currentOffset = mContainer.getTranslationY();
+            final int headerHeight = mHeaderView.getHeight();
+            if (Math.abs(currentOffset) < headerHeight / 2) {
+                //显示头部
+                scrollShowHeader(duration);
+            } else {
+                //隐藏头部
+                scrollHideHeader(duration);
+            }
+        }
     }
 
     private void flingScroll(float velocityY, final int duration, boolean consumed) {
@@ -497,10 +533,8 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
     }
 
     private void smoothScroll(int startY, int dy, int duration) {
-        //if (isAutoScroll) {
-            mScroller.startScroll(0, startY, 0, dy, duration);
-            invalidate();
-        //}
+        mScroller.startScroll(0, startY, 0, dy, duration);
+        invalidate();
     }
 
     /**
