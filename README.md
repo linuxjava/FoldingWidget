@@ -1,4 +1,4 @@
-# RefreshLayout
+# StickyNavLayout
 
 项目特点
 * 支持RecycView和ViewPage嵌套滑动；
