@@ -3,7 +3,6 @@ package xiao.free.folding.lib;
 import android.content.Context;
 import android.support.v4.view.NestedScrollingParent;
 import android.support.v4.view.ViewCompat;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -20,7 +19,7 @@ import xiao.free.folding.util.DensityUtils;
 public class StickyNavLayout extends LinearLayout implements NestedScrollingParent {
     public static final String TAG = "StickyNavLayout";
     private static final int TOP_CHILD_FLING_THRESHOLD = 3;
-    private static final int DEFAULT_TOP_PADDING = 0;
+    private static final int DEFAULT_TOP_MARGIN = 0;
     private static final int DEFAULT_MAX_ANIMATION_DURATION = 600;//默认最大动画时间
     private static final int DEFAULT_MIN_ANIMATION_DURATION = 200;//默认最小动画时间
     public static final int SLIDING_ALL = 1;//整个布局整体上滑
@@ -45,7 +44,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
         setOrientation(LinearLayout.VERTICAL);
 
         mScroller = new Scroller(getContext());
-        mTopMargin = DensityUtils.dp2px(getContext(), DEFAULT_TOP_PADDING);
+        mTopMargin = DensityUtils.dp2px(getContext(), DEFAULT_TOP_MARGIN);
         mMaximumVelocity = ViewConfiguration.get(context)
                 .getScaledMaximumFlingVelocity();
         mMinimumVelocity = ViewConfiguration.get(context)
@@ -62,7 +61,7 @@ public class StickyNavLayout extends LinearLayout implements NestedScrollingPare
      *
      * @param topMargin 单位dp
      */
-    public void setTopPadding(int topMargin) {
+    public void setTopMargin(int topMargin) {
         mTopMargin = DensityUtils.dp2px(getContext(), topMargin);
     }
 
